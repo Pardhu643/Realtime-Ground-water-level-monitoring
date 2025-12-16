@@ -15,7 +15,7 @@ export default function Alerts({ user }) {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/api/alerts");
+        const response = await fetch("https://realtime-ground-water-level-monitoring-1.onrender.com/api/alerts");
         if (response.ok) {
           const data = await response.json();
           setAlerts(data);

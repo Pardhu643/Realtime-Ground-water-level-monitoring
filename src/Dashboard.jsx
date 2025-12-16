@@ -11,7 +11,7 @@ export default function Dashboard({ user }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/dashboard")
+    fetch("https://realtime-ground-water-level-monitoring-1.onrender.com/api/dashboard")
       .then((res) => {
         if (!res.ok) throw new Error("Backend error");
         return res.json();

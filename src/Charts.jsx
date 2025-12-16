@@ -23,7 +23,7 @@ export default function Charts({ user }) {
 
   // Fetch chart data from backend
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/charts")
+    fetch("https://realtime-ground-water-level-monitoring-1.onrender.com/api/charts")
       .then(res => {
         if (!res.ok) throw new Error("Backend error");
         return res.json();

@@ -31,17 +31,17 @@ const getSafeStatus = (pulse_score) => {
 
 useEffect(() => {
     // Fetch stations
-    fetch("http://127.0.0.1:5000/api/stations")
+    fetch("https://realtime-ground-water-level-monitoring-1.onrender.com/api/stations")
       .then(res => res.json())
       .then(data => setStations(data));
 
     // Fetch alerts
-    fetch("http://127.0.0.1:5000/api/alerts")
+    fetch("https://realtime-ground-water-level-monitoring-1.onrender.com/api/alerts")
       .then(res => res.json())
       .then(data => setAlerts(data));
 
     // Fetch today's recharge / groundwater prediction
-    fetch("http://127.0.0.1:5000/api/dashboard")
+    fetch("https://realtime-ground-water-level-monitoring-1.onrender.com/api/dashboard")
       .then(res => res.json())
       .then(data => {
         setRecharge({

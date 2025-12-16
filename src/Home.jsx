@@ -54,7 +54,7 @@ export default function Home({ user, setUser }) {
 
   /* ---------------- FETCH ALERT DATA ---------------- */
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/alerts")
+    fetch("https://realtime-ground-water-level-monitoring-1.onrender.com/api/alerts")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
