@@ -1,179 +1,173 @@
-import React, { useState } from "react";
-import {
-  FaBars, FaTimes, FaUserCircle,
-  FaTachometerAlt, FaMapMarkerAlt, FaBell, FaChartBar
-} from "react-icons/fa";
-import { Link } from "react-router-dom";
-import {
-  LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer
-} from "recharts";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaHome, FaUserCircle } from "react-icons/fa";
+import Plot from "react-plotly.js";
 
-export default function Dashboard({ user, setUser }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+export default function Dashboard({ user }) {
+  const navigate = useNavigate();
 
-  // ✅ Sample data from /api/dashboard
-  const sampleData = {
-    predicted_groundwater: 12.345,
-    station_pulse_score: 92.5,
-    rainfall_forecast: [
-      { date: "2025-09-17", rainfall_mm: 10.2 },
-      { date: "2025-09-18", rainfall_mm: 8.1 },
-      { date: "2025-09-19", rainfall_mm: 7.5 },
-      { date: "2025-09-20", rainfall_mm: 9.0 },
-      { date: "2025-09-21", rainfall_mm: 6.3 },
-      { date: "2025-09-22", rainfall_mm: 11.2 },
-      { date: "2025-09-23", rainfall_mm: 10.5 }
-    ],
-    groundwater_forecast: [
-      { date: "2025-09-17", Groundwatelevel_m: 12.2 },
-      { date: "2025-09-18", Groundwatelevel_m: 12.3 },
-      { date: "2025-09-19", Groundwatelevel_m: 12.4 },
-      { date: "2025-09-20", Groundwatelevel_m: 12.5 },
-      { date: "2025-09-21", Groundwatelevel_m: 12.6 },
-      { date: "2025-09-22", Groundwatelevel_m: 12.7 },
-      { date: "2025-09-23", Groundwatelevel_m: 12.8 }
-    ]
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:5000/api/dashboard")
+      .then((res) => {
+        if (!res.ok) throw new Error("Backend error");
+        return res.json();
+      })
+      .then((json) => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Failed to load dashboard data");
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <p className="p-6">Loading forecast charts...</p>;
+  if (error) return <p className="p-6 text-red-600">{error}</p>;
+  if (!data) return null;
+
+  const {
+    rainfall_dates,
+    predicted_rainfall,
+    rainfall_upper,
+    rainfall_lower,
+    gw_dates,
+    predicted_gw,
+    today_gw_level,
+  } = data;
+
+  /* ================= Rainfall ================= */
+  const rainfallUpper = {
+    x: rainfall_dates,
+    y: rainfall_upper,
+    mode: "lines",
+    line: { width: 0 },
+    showlegend: false,
+  };
+
+  const rainfallLower = {
+    x: rainfall_dates,
+    y: rainfall_lower,
+    mode: "lines",
+    fill: "tonexty",
+    fillcolor: "rgba(0,0,255,0.2)",
+    line: { width: 0 },
+    showlegend: false,
+  };
+
+  const rainfallTrace = {
+    x: rainfall_dates,
+    y: predicted_rainfall,
+    mode: "lines+markers",
+    name: "Predicted Rainfall",
+    line: { color: "blue", width: 3 },
+    hovertemplate:
+      "Date: %{x}<br>Predicted Rainfall: %{y:.2f} mm<extra></extra>",
+  };
+
+  /* ================= Groundwater ================= */
+  const gwTrace = {
+    x: gw_dates,
+    y: predicted_gw,
+    mode: "lines+markers",
+    name: "Predicted Groundwater",
+    line: { color: "purple", width: 3 },
+    hovertemplate:
+      "Date: %{x}<br>Predicted GW: %{y:.3f} m<extra></extra>",
+  };
+
+  const gwCurrent = {
+    x: [gw_dates[0], gw_dates[gw_dates.length - 1]],
+    y: [today_gw_level, today_gw_level],
+    mode: "lines",
+    name: "Current Level",
+    line: { color: "red", width: 2, dash: "dash" },
+    hovertemplate: `Current Level: ${today_gw_level.toFixed(
+      3
+    )} m<extra></extra>`,
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-       {/* Navbar */}
-            <nav className="flex items-center justify-between bg-blue-600 p-4 text-white relative z-50">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="text-2xl focus:outline-none"
-                >
-                  {menuOpen ? <FaTimes /> : <FaBars />}
-                </button>
-                <div className="flex items-center space-x-2">
-                  <img src="logo1.png" alt="Logo" className="h-10" />
-                  <span className="font-bold text-lg">Aquapulse</span>
-                </div>
-                
-              </div>
-      
-              {/* Profile */}
-              <div className="relative">
-                <FaUserCircle
-                  title="Profile"
-                  className="cursor-pointer text-2xl"
-                  onClick={() => setProfileOpen(!profileOpen)}
-                />
-                {profileOpen && (
-                  <div className="absolute right-0 mt-2 bg-white text-black rounded-lg shadow-lg w-56 z-50">
-                    <div className="p-4 border-b">
-                      <p className="font-semibold">
-                        {user?.username || "Guest User"}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {user?.email || "guest@email.com"}
-                      </p>
-                    </div>
-                    {user ? (
-                      <>
-                        <button className="w-full text-left px-4 py-2 hover:bg-gray-100">
-                          Change Password
-                        </button>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
-                        >
-                          Logout
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => (window.location.href = "/")}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 text-blue-600"
-                      >
-                        Login
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </nav>
-      
-            {/* Sidebar */}
-            <div
-              className={`fixed top-0 left-0 h-full w-64 bg-blue-700 text-white shadow-lg transform transition-transform duration-300 z-40 ${
-                menuOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
-            >
-              <div className="flex items-center justify-between p-4 border-b border-blue-500">
-                <h2 className="font-bold text-lg">Menu</h2>
-              </div>
-              <div className="flex flex-col space-y-4 p-6">
-                <Link
-                  to="/dashboard"
-                  className="flex items-center space-x-2 hover:text-gray-200"
-                >
-                  <FaTachometerAlt /> <span>Dashboard</span>
-                </Link>
-                <Link
-                  to="/stations"
-                  className="flex items-center space-x-2 hover:text-gray-200"
-                >
-                  <FaMapMarkerAlt /> <span>Stations</span>
-                </Link>
-                <Link
-                  to="/alerts"
-                  className="flex items-center space-x-2 hover:text-gray-200"
-                >
-                  <FaBell /> <span>Alerts</span>
-                </Link>
-                <Link
-                  to="/charts"
-                  className="flex items-center space-x-2 hover:text-gray-200"
-                >
-                  <FaChartBar /> <span>Charts</span>
-                </Link>
-              </div>
-            </div>
+    <div className="min-h-screen relative">
+  {/* Full-screen background image */}
+  <div
+    className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
+    style={{ backgroundImage: "url('/coastline-waikiki-water-level-diamond-260nw-2495293861.jpg')" }}
+  />
+  <div className="fixed inset-0 bg-black/30 -z-10" /> {/* Optional overlay for readability */}
 
-      {/* Main */}
-      <main className="flex-grow p-6 bg-gray-100">
-        <div className="bg-white p-4 rounded-2xl shadow mb-6">
-          <h2 className="text-lg font-extrabold">Dashboard</h2>
-          <h2 className="text-lg font-bold">Predicted Groundwater Level</h2>
-          <p>{sampleData.predicted_groundwater} m</p>
-          <p>Pulse Score: {sampleData.station_pulse_score}/100</p>
+      {/* ================= Top Bar ================= */}
+<nav className="fixed top-0 left-0 right-0 h-16 bg-blue-600 text-white flex items-center justify-between px-8 shadow z-50">
+        <h1 className="text-lg font-bold">Aquapulse Dashboard</h1>
+        
+
+        <div className="flex items-center space-x-4">
+          {/* ✅ Home Button */}
+          <button
+            onClick={() => navigate("/home")}
+            className="flex items-center space-x-1 hover:text-gray-200"
+            title="Home"
+          >
+            <FaHome className="text-xl" />
+            <span className="hidden md:inline">Home</span>
+          </button>
+
+          {/* Profile */}
+          <div className="flex items-center space-x-2">
+            <FaUserCircle className="text-2xl" />
+            <span className="hidden md:inline">
+              {user?.username || "Guest"}
+            </span>
+          </div>
         </div>
+      </nav>
 
-        {/* Charts */}
+      {/* ================= Content ================= */}
+      <div className="pt-20 p-6">
+
+        <h2 className="text-2xl font-bold mb-6">Next Week Forecast</h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Rainfall */}
           <div className="bg-white p-4 rounded-2xl shadow">
-            <h2 className="text-lg font-bold">Rainfall (7 days)</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={sampleData.rainfall_forecast}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line dataKey="rainfall_mm" stroke="#1f77b4" />
-              </LineChart>
-            </ResponsiveContainer>
+            <h3 className="font-semibold mb-2">Rainfall Forecast</h3>
+            <Plot
+              data={[rainfallUpper, rainfallLower, rainfallTrace]}
+              layout={{
+                title: "Predicted Rainfall (mm)",
+                xaxis: { title: "Date" },
+                yaxis: { title: "Rainfall (mm)" },
+                hovermode: "x unified",
+                autosize: true,
+              }}
+              config={{ responsive: true }}
+              style={{ width: "100%", height: "350px" }}
+            />
           </div>
+
+          {/* Groundwater */}
           <div className="bg-white p-4 rounded-2xl shadow">
-            <h2 className="text-lg font-bold">Groundwater Levels (7 days)</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={sampleData.groundwater_forecast}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line dataKey="Groundwatelevel_m" stroke="#2ca02c" />
-              </LineChart>
-            </ResponsiveContainer>
+            <h3 className="font-semibold mb-2">Groundwater Forecast</h3>
+            <Plot
+              data={[gwTrace, gwCurrent]}
+              layout={{
+                title: "Predicted Groundwater Level (m)",
+                xaxis: { title: "Date" },
+                yaxis: { title: "GW Level (m)" },
+                hovermode: "x unified",
+                autosize: true,
+              }}
+              config={{ responsive: true }}
+              style={{ width: "100%", height: "350px" }}
+            />
           </div>
         </div>
-        <a href="/home">
-      <button className=" py-2 px-4 mt-5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-200">Back</button></a>
-      </main>
-      
+      </div>
     </div>
   );
 }

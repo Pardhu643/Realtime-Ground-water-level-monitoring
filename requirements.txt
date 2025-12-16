@@ -1,7 +1,9 @@
+Flask
+flask-cors
 pandas
 numpy
+scikit-learn
 matplotlib
 plotly
 seaborn
-scikit-learn
 prophet

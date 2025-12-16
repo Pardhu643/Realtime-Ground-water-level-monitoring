@@ -10,16 +10,29 @@ export default function Login({ setUser }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Normally you'd validate/login with backend here
-    setUser({ username, email });
+    // Basic validation
+    if (!username || !email || !password) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    const userData = { username, email };
+
+    // ✅ Save user globally
+    setUser(userData);
+
+    // ✅ Persist login across refresh
+    localStorage.setItem("aquapulse_user", JSON.stringify(userData));
 
     // Navigate to home
     navigate("/home");
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 bg-cover bg-center"
-         style={{ backgroundImage: "url('/bg.jpg')" }}>
+    <div
+      className="flex items-center justify-center min-h-screen bg-gray-100 bg-cover bg-center"
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
       <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg">
         {/* Logo */}
         <div className="flex justify-center mb-6">
@@ -27,7 +40,7 @@ export default function Login({ setUser }) {
         </div>
 
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Login to Aquapluse
+          Login to <span className="text-blue-600">Aquapulse</span>
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -7,40 +7,52 @@ import {
   FaUserCircle,
   FaTachometerAlt,
   FaChartBar,
+  FaHome,
 } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-// Fix Leaflet default marker icons
+/* ---------------- FIX LEAFLET ICON ISSUE ---------------- */
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
 
-// ✅ Function to create colored marker
+/* ---------------- CUSTOM COLORED MARKER ---------------- */
 function getColoredMarker(color = "blue") {
-  return new L.Icon({
-    iconUrl: `https://chart.googleapis.com/chart?chst=d_map_pin_icon&chld=water|${color}`,
-    iconSize: [30, 50],
-    iconAnchor: [15, 50],
-    popupAnchor: [0, -50],
-    shadowUrl: markerShadow,
-    shadowSize: [41, 41],
-    shadowAnchor: [12, 41],
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        background:${color};
+        width:18px;
+        height:18px;
+        border-radius:50%;
+        border:3px solid white;
+        box-shadow:0 0 6px rgba(0,0,0,0.6);
+      "></div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
   });
 }
 
+/* ============================ HOME ============================ */
 export default function Home({ user, setUser }) {
+  const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [stationStatus, setStationStatus] = useState(null);
 
+  /* ---------------- FETCH ALERT DATA ---------------- */
   useEffect(() => {
     fetch("http://127.0.0.1:5000/api/alerts")
       .then((res) => res.json())
@@ -49,40 +61,51 @@ export default function Home({ user, setUser }) {
           setStationStatus(data[0]);
         }
       })
-      .catch((err) => console.error("Error fetching station status:", err));
+      .catch((err) => console.error("Error fetching alerts:", err));
   }, []);
 
+  /* ---------------- LOGOUT ---------------- */
   const handleLogout = () => {
-    if (setUser) setUser(null);
-    window.location.href = "/";
+    setUser(null);
+    navigate("/");
   };
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Navbar */}
-      <nav className="flex items-center justify-between bg-blue-600 p-4 text-white relative z-50">
+      {/* ================= NAVBAR ================= */}
+      <nav className="flex items-center justify-between bg-blue-600 p-4 text-white z-50">
+        {/* Left */}
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-2xl focus:outline-none"
-          >
+          <button onClick={() => setMenuOpen(!menuOpen)} className="text-2xl">
             {menuOpen ? <FaTimes /> : <FaBars />}
           </button>
+
           <div className="flex items-center space-x-2">
             <img src="logo1.png" alt="Logo" className="h-10" />
-            <span className="font-bold text-lg">Aquapulse</span>
+            <span className="font-bold text-3xl">Aquapulse - </span>
+            <span className="text-xl text-white/100">The realtime groundwater level monitoring system</span>
+
           </div>
         </div>
 
-        {/* Profile */}
-        <div className="relative">
+        {/* Right */}
+        <div className="flex items-center space-x-4 relative">
+          {/* Home Button */}
+          <FaHome
+            title="Home"
+            className="cursor-pointer text-2xl hover:text-gray-200"
+            onClick={() => navigate("/home")}
+          />
+
+          {/* Profile */}
           <FaUserCircle
             title="Profile"
-            className="cursor-pointer text-2xl"
+            className="cursor-pointer text-2xl hover:text-gray-200"
             onClick={() => setProfileOpen(!profileOpen)}
           />
+
           {profileOpen && (
-            <div className="absolute right-0 mt-2 bg-white text-black rounded-lg shadow-lg w-56 z-50">
+            <div className="absolute right-0 top-10 bg-white text-black rounded-lg shadow-lg w-56">
               <div className="p-4 border-b">
                 <p className="font-semibold">
                   {user?.username || "Guest User"}
@@ -91,6 +114,7 @@ export default function Home({ user, setUser }) {
                   {user?.email || "guest@email.com"}
                 </p>
               </div>
+
               {user ? (
                 <>
                   <button className="w-full text-left px-4 py-2 hover:bg-gray-100">
@@ -105,7 +129,7 @@ export default function Home({ user, setUser }) {
                 </>
               ) : (
                 <button
-                  onClick={() => (window.location.href = "/")}
+                  onClick={() => navigate("/")}
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 text-blue-600"
                 >
                   Login
@@ -115,83 +139,70 @@ export default function Home({ user, setUser }) {
           )}
         </div>
       </nav>
+      {menuOpen && (
+  <div
+    className="fixed inset-0 bg-black/30 z-[9000]"
+    onClick={() => setMenuOpen(false)}
+  />
+)}
 
-      {/* Sidebar */}
+
+      {/* ================= SIDEBAR ================= */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-blue-700 text-white shadow-lg transform transition-transform duration-300 z-40 ${
-          menuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-blue-500">
-          <h2 className="font-bold text-lg">Menu</h2>
-        </div>
-        <div className="flex flex-col space-y-4 p-6">
-          <Link
-            to="/dashboard"
-            className="flex items-center space-x-2 hover:text-gray-200"
-          >
+  className={`fixed top-0 left-0 h-full w-64 bg-blue-700 text-white
+  z-[9999] shadow-2xl transform transition-transform duration-300
+  ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
+>
+
+        <div className="p-6 space-y-4">
+          <Link to="/dashboard" className="flex items-center space-x-2">
             <FaTachometerAlt /> <span>Dashboard</span>
           </Link>
-          <Link
-            to="/stations"
-            className="flex items-center space-x-2 hover:text-gray-200"
-          >
+          <Link to="/stations" className="flex items-center space-x-2">
             <FaMapMarkerAlt /> <span>Stations</span>
           </Link>
-          <Link
-            to="/alerts"
-            className="flex items-center space-x-2 hover:text-gray-200"
-          >
+          <Link to="/alerts" className="flex items-center space-x-2">
             <FaBell /> <span>Alerts</span>
           </Link>
-          <Link
-            to="/charts"
-            className="flex items-center space-x-2 hover:text-gray-200"
-          >
+          <Link to="/charts" className="flex items-center space-x-2">
             <FaChartBar /> <span>Charts</span>
           </Link>
         </div>
       </div>
 
-      {/* Map */}
-      <main className="flex-grow relative z-0">
-        <div className="h-[calc(100vh-120px)] w-full">
-          <MapContainer
-            center={[16.575, 79.311]}
-            zoom={12}
-            className="h-full w-full"
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
-            />
+      {/* ================= MAP ================= */}
+<main className="flex-grow">
+  <MapContainer
+    center={[16.575, 79.311]}
+    zoom={12}
+    className="w-full h-[calc(100vh-64px)] z-0"
+  >
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution="&copy; OpenStreetMap"
+    />
 
-            {/* ✅ Always show default marker */}
-            <Marker
-              position={[16.575, 79.311]}
-              icon={getColoredMarker(stationStatus?.color || "blue")}
-            >
-              <Popup>
-                {stationStatus ? (
-                  <>
-                    <b>Station:</b> {stationStatus.station_id} <br />
-                    <b>Pulse Score:</b> {stationStatus.pulse_score}/100 <br />
-                    <b>Status:</b> {stationStatus.alert_level} <br />
-                    <b>Message:</b> {stationStatus.message}
-                  </>
-                ) : (
-                  <>Station location pinned (TGPH2SW0203)</>
-                )}
-              </Popup>
-            </Marker>
-          </MapContainer>
-        </div>
-      </main>
+    <Marker
+      key={stationStatus?.color || "blue"}
+      position={[16.575, 79.311]}
+      icon={getColoredMarker(stationStatus?.color || "blue")}
+    >
+      <Popup>
+        {stationStatus ? (
+          <>
+            <b>Station:</b> {stationStatus.station_id} <br />
+            <b>Pulse Score:</b> {stationStatus.pulse_score}/100 <br />
+            <b>Status:</b> {stationStatus.alert_level} <br />
+            <b>Message:</b> {stationStatus.message}
+          </>
+        ) : (
+          <>Station location pinned</>
+        )}
+      </Popup>
+    </Marker>
+  </MapContainer>
+</main>
 
-      {/* Footer */}
-      <footer className="bg-blue-600 text-white p-4 text-center relative z-10">
-        © {new Date().getFullYear()} DWLR. All rights reserved.
-      </footer>
     </div>
   );
 }
